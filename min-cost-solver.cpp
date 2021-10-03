@@ -5,6 +5,7 @@
 #include <cassert>
 #include <climits>
 #include <algorithm>
+#include <bitset>
 
 using std::max;
 using std::cin;
@@ -93,6 +94,56 @@ solve(const vector<size_t> &costs, const size_t &w,
   }
 }
 
+// check if mask doesn't have a >w  consecutive run of zeros
+bool
+valid(const size_t m, const size_t w, size_t mask) {
+  size_t zero_run = 0;
+  for (size_t i = 0; i < m; ++i) {
+    zero_run = (mask & 1) ? (0) : (zero_run + 1);
+    if (zero_run >= w) return false;
+    mask >>= 1;
+  }
+
+  return true;
+}
+
+// brute force solve to compare with dp and make sure dp is correct
+// for m from 1 to about 25, 26.
+void
+solve_bruteforce(const vector<size_t> &costs, const size_t &w,
+                 vector<bool> &s, size_t &ans) {
+  const size_t m = costs.size();
+  const size_t num_masks = (1ul << m);
+
+  static const size_t INF = std::numeric_limits<size_t>::max(); 
+  size_t best_mask = INF;
+  ans = INF;
+
+  // get the best score
+  for (size_t i = 0; i < num_masks; ++i) {
+    if (valid(m, w, i)) {
+      //cerr << "testing " << std::bitset<20>(i) << "\n";
+      size_t cand = 0;
+      size_t mask = i;
+      for (size_t j = 0; j < m; ++j) {
+        cand += (mask & 1)*costs[j];
+        mask >>= 1;
+      }
+      if (cand < ans) {
+        ans = cand;
+        best_mask = i;
+      }
+    }
+  }
+
+  // create the index
+  cerr << "best mask: " << std::bitset<20>(best_mask) << "\n";
+  for (size_t i = 0; i < m; ++i) {
+    s[i] = (best_mask & 1);
+    best_mask >>= 1;
+  }
+}
+
 int
 main(int argc, const char **argv) {
   size_t m, w;
@@ -103,6 +154,9 @@ main(int argc, const char **argv) {
 
   vector<bool> s (m, false);
   size_t ans;
+
+  // GS: uncomment this to check if brute force matches dp solution
+  //solve_bruteforce(costs, w, s, ans);
   solve(costs, w, s, ans);
 
   for (size_t i = 0; i < m; ++i)
